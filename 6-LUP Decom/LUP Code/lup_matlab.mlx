@@ -1,0 +1,88 @@
+function LUPDecompositionAndSolve()
+    % Define the matrix A (8x8 matrix)
+    A = [10, -1, 2, 0, 0, 0, 0, 0;
+        -1, 11, -1, 3, 0, 0, 0, 0;
+        2, -1, 10, -1, 0, 0, 0, 0;
+        0, 3, -1, 8, 2, 0, 0, 0;
+        0, 0, 0, 2, 6, -1, -1, 0;
+        0, 0, 0, 0, -1, 9, 0, -1;
+        0, 0, 0, 0, -1, 0, 8, -1;
+        0, 0, 0, 0, 0, -1, -1, 9];
+    
+    % Define the 8-dimensional vector b (inequalities)
+    b = [6; 25; -11; 15; -20; 12; 17; 10];
+
+    % Initialize permutation matrix P
+    P = 1:8;
+    
+    % Start measuring runtime
+    tic;
+    
+    % Perform LUP decomposition
+    [L, U, P] = LUPDecomposition(A);
+    
+    % Solve the system using forward and backward substitution
+    x = LUPSolve(L, U, P, b);
+    
+    % End measuring runtime
+    elapsedTime = toc;
+    
+    % Display the solution
+    disp('Solution vector x:');
+    disp(x);
+    
+    % Display the runtime
+    fprintf('Elapsed time: %.6f seconds\n', elapsedTime);
+end
+
+function [L, U, P] = LUPDecomposition(A)
+    % Get the size of matrix A
+    n = size(A, 1);
+    
+    % Initialize L, U, and P matrices
+    L = eye(n);
+    P = eye(n);
+    U = A;
+    
+    for k = 1:n
+        % Find the pivot element and perform row swaps if necessary
+        [~, idx] = max(abs(U(k:n, k)));
+        idx = idx + k - 1;
+        
+        if idx ~= k
+            % Swap rows in U
+            U([k, idx], :) = U([idx, k], :);
+            % Swap rows in P
+            P([k, idx], :) = P([idx, k], :);
+            % Swap rows in L, but only for the columns before k
+            if k > 1
+                L([k, idx], 1:k-1) = L([idx, k], 1:k-1);
+            end
+        end
+        
+        % Perform Gaussian elimination to form L and U
+        for i = k+1:n
+            L(i, k) = U(i, k) / U(k, k);
+            U(i, k:n) = U(i, k:n) - L(i, k) * U(k, k:n);
+        end
+    end
+end
+
+function x = LUPSolve(L, U, P, b)
+    % Solve the system of equations given L, U, P, and b
+    
+    % Apply permutation to b
+    b = P * b;
+    
+    % Forward substitution to solve Ly = Pb
+    y = zeros(size(b));
+    for i = 1:length(b)
+        y(i) = b(i) - L(i, 1:i-1) * y(1:i-1);
+    end
+    
+    % Backward substitution to solve Ux = y
+    x = zeros(size(b));
+    for i = length(b):-1:1
+        x(i) = (y(i) - U(i, i+1:end) * x(i+1:end)) / U(i, i);
+    end
+end

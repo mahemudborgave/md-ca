@@ -1,0 +1,6 @@
+g++
+    Total Time: 18 microseconds
+
+MATLAB:
+
+    Total Time: 6,920 microseconds
